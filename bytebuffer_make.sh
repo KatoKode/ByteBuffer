@@ -26,7 +26,7 @@ sep="---------------------------------------------------------------------------
 
 echo -e "${sep}"
 
-builtin cd ../bytebuffer/ || exit -1
+builtin cd ./bytebuffer/ || exit -1
 
 make clean; make
 
