@@ -75,36 +75,6 @@ enum byte_order { NONE, BIG_END=1, LITTLE_END=4 };
 byte_order_t bb_native_byte_order (void);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//
-
-double bb_to_double (byte_t, byte_t, byte_t, byte_t, byte_t,
-    byte_t, byte_t, byte_t);
-float bb_to_float (byte_t, byte_t, byte_t, byte_t);
-int16_t bb_to_int16 (byte_t, byte_t);
-int32_t bb_to_int32 (byte_t, byte_t, byte_t, byte_t);
-int64_t bb_to_int64 (byte_t, byte_t, byte_t, byte_t, byte_t,
-    byte_t, byte_t, byte_t);
-uint16_t bb_to_uint16 (byte_t, byte_t);
-uint32_t bb_to_uint32 (byte_t, byte_t, byte_t, byte_t);
-uint64_t bb_to_uint64 (byte_t, byte_t, byte_t, byte_t, byte_t,
-    byte_t, byte_t, byte_t);
- 
-uint64_t bb_double_to_u64 (double);
-uint32_t bb_float_to_u32 (float);
-uint16_t bb_s16_to_u16 (int16_t);
-uint32_t bb_s32_to_u32 (int32_t);
-uint64_t bb_s64_to_u64 (int64_t);
-float bb_u32_to_float (uint32_t);
-double bb_u64_to_double (uint64_t);
-
-uint16_t bb_u16_shift_left (byte_t, uint32_t);
-byte_t bb_u16_shift_right (uint16_t, uint16_t, uint32_t);
-uint32_t bb_u32_shift_left (byte_t, uint32_t);
-byte_t bb_u32_shift_right (uint32_t, uint32_t, uint32_t);
-uint64_t bb_u64_shift_left (byte_t, uint32_t);
-byte_t bb_u64_shift_right (uint64_t, uint64_t, uint32_t);
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // buffer
 
 typedef void (*bb_commit_cb) (void);
