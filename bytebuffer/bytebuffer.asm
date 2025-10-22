@@ -873,7 +873,7 @@ bb_get_int32_at:
 ;
 ; return:
 ;
-;   xmm0 = int64_t value
+;   rax = int64_t value
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_get_int64:function
@@ -900,7 +900,7 @@ bb_get_int64:
 ;
 ; return:
 ;
-;   xmm0 = int64_t value
+;   rax = int64_t value
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_get_int64_at:function
@@ -968,6 +968,7 @@ bb_get_uint16:
 ;
 ;   QWORD [rbp - 8]   = rdi (bb)
 ;   QWORD [rbp - 16]  = bb->index
+;   QWORD [rbp - 24]  = uint16_t value
 ;
 ; return:
 ;
@@ -979,7 +980,7 @@ bb_get_uint16_at:
 ; prologue
       push      rbp
       mov       rbp, rsp
-      sub       rsp, 16
+      sub       rsp, 24
 ; QWORD [rbp - 8] = rdi (bb)
       mov       QWORD [rbp - 8], rdi
 ; QWORD [rbp - 16] = bb_get_index(bb);
@@ -989,10 +990,13 @@ bb_get_uint16_at:
       call      bb_set_index
 ; bb_get_float(bb);
       call      bb_get_uint16
+      mov       QWORD [rbp - 24], rax
 ; bb_set_index(bb, org_index);
       mov       rdi, QWORD [rbp - 8]
       mov       rsi, QWORD [rbp - 16]
       call      bb_set_index
+; return uint16_t value
+      mov       rax, QWORD [rbp - 24]
 ; epilogue
       mov       rsp, rbp
       pop       rbp
@@ -1063,6 +1067,7 @@ bb_get_uint32:
 ;
 ;   QWORD [rbp - 8]   = rdi (bb)
 ;   QWORD [rbp - 16]  = bb->index
+;   QWORD [rbp - 24]  = uint32_t value
 ;
 ; return:
 ;
@@ -1074,7 +1079,7 @@ bb_get_uint32_at:
 ; prologue
       push      rbp
       mov       rbp, rsp
-      sub       rsp, 16
+      sub       rsp, 24
 ; QWORD [rbp - 8] = rdi (bb)
       mov       QWORD [rbp - 8], rdi
 ; QWORD [rbp - 16] = bb_get_index(bb);
@@ -1084,10 +1089,13 @@ bb_get_uint32_at:
       call      bb_set_index
 ; bb_get_float(bb);
       call      bb_get_uint32
+      mov       QWORD [rbp - 24], rax
 ; bb_set_index(bb, org_index);
       mov       rdi, QWORD [rbp - 8]
       mov       rsi, QWORD [rbp - 16]
       call      bb_set_index
+; return uint32_t value
+      mov       rax, QWORD [rbp - 24]
 ; epilogue
       mov       rsp, rbp
       pop       rbp
@@ -1111,7 +1119,7 @@ bb_get_uint32_at:
 ;
 ; return:
 ;
-;   xmm0 = uint64_t value
+;   rax = uint64_t value
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_get_uint64:function
@@ -1189,10 +1197,11 @@ bb_get_uint64:
 ;
 ;   QWORD [rbp - 8]   = rdi (bb)
 ;   QWORD [rbp - 16]  = org_index (bb->index)
+;   QWROD [rbp - 24]  = uint64_t value
 ;
 ; return:
 ;
-;   xmm0 = uint64_t value
+;   rax = uint64_t value
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_get_uint64_at:function
@@ -1200,7 +1209,7 @@ bb_get_uint64_at:
 ; prologue
       push      rbp
       mov       rbp, rsp
-      sub       rsp, 16
+      sub       rsp, 24
 ; QWORD [rbp - 8] = rdi (bb)
       mov       QWORD [rbp - 8], rdi
 ; QWORD [rbp - 16] = bb_get_index(bb);
@@ -1210,10 +1219,13 @@ bb_get_uint64_at:
       call      bb_set_index
 ; bb_get_uint64(bb);
       call      bb_get_uint64
+      mov       QWORD [rbp - 24], rax
 ; bb_set_index(bb, org_index);
       mov       rdi, QWORD [rbp - 8]
       mov       rsi, QWORD [rbp - 16]
       call      bb_set_index
+; return uint64_t value
+      mov       rax, QWORD [rbp - 24]
 ; epilogue
       mov       rsp, rbp
       pop       rbp
@@ -1238,7 +1250,7 @@ bb_get_uint64_at:
 ;
 ; return:
 ;
-;   rax = pointer to a string buffer | NULL
+;   rax = varchar | NULL
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_get_varchar:function
@@ -1302,10 +1314,11 @@ bb_get_varchar:
 ;
 ;   QWORD [rbp - 8]   = rdi (bb)
 ;   QWORD [rbp - 16]  = org_index (bb->index)
+;   QWORD [rbp - 24]  = return value
 ;
 ; return:
 ;
-;   al = (char) bb->buffer[index] | '\0'
+;   rax = varchar | NULL
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_get_varchar_at:function
@@ -1313,7 +1326,7 @@ bb_get_varchar_at:
 ; prologue
       push      rbp
       mov       rbp, rsp
-      sub       rsp, 16
+      sub       rsp, 24
 ; QWORD [rbp - 8] = rdi (bb)
       mov       QWORD [rbp - 8], rdi
 ; QWORD [rbp - 16] = bb_get_index(bb);
@@ -1323,10 +1336,13 @@ bb_get_varchar_at:
       mov       QWORD [rdi + bytebuffer.index], rsi
 ; bb_get_uint64(bb);
       call      bb_get_varchar
+      mov       QWORD [rbp - 24], rax
 ; bb_set_index(bb, org_index);
       mov       rdi, QWORD [rbp - 8]
-      mov       rcx, QWORD [rbp - 16]
-      mov       QWORD [rdi + bytebuffer.index], rcx
+      mov       rax, QWORD [rbp - 16]
+      mov       QWORD [rdi + bytebuffer.index], rax
+; return varchar value
+      mov       rax, QWORD [rbp - 24]
 ; epilogue
       mov       rsp, rbp
       pop       rbp
