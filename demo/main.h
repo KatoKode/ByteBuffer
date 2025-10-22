@@ -1,6 +1,5 @@
 /*------------------------------------------------------------------------------
-    ByteBuffer Implementation in x86_64 Assembly Language with C
-    Interface
+    ByteBuffer Implementation in x86_64 Assembly Language with C Interface
 
     Copyright (C) 2025  J. McIntosh
 
@@ -25,26 +24,29 @@
 #include <string.h>
 #include "../bytebuffer/bytebuffer.h"
 
+// To get debug output uncomment the following line and remake the demo program.
+//#define BB_DEBUG  1
+
 #define BUFFER_SIZE     256
 
 void getNativeByteOrder();
 
-double getDouble (bb_buffer_t *);
-float getfloat (bb_buffer_t *);
-int16_t getI16 (bb_buffer_t *);
-int32_t getI32 (bb_buffer_t *);
-int64_t getI64 (bb_buffer_t *);
-char * getText (bb_buffer_t *);
+double getDouble (bytebuffer_t *);
+float getfloat (bytebuffer_t *);
+int16_t getI16 (bytebuffer_t *);
+int32_t getI32 (bytebuffer_t *);
+int64_t getI64 (bytebuffer_t *);
+char * getText (bytebuffer_t *);
 
-void putDouble (bb_buffer_t *, double const);
-void putFloat (bb_buffer_t *, float const);
-void putI16 (bb_buffer_t *, int16_t const);
-void putI32 (bb_buffer_t *, int32_t const);
-void putI64 (bb_buffer_t *, int64_t const);
-void putText (bb_buffer_t *, char const *);
+void putDouble (bytebuffer_t *, double const);
+void putFloat (bytebuffer_t *, float const);
+void putI16 (bytebuffer_t *, int16_t const);
+void putI32 (bytebuffer_t *, int32_t const);
+void putI64 (bytebuffer_t *, int64_t const);
+void putText (bytebuffer_t *, char const *);
 
-void putValues (bb_buffer_t *);
-void getValues (bb_buffer_t *);
+void putValues (bytebuffer_t *);
+void getValues (bytebuffer_t *);
 
 void toDouble ();
 void toFloat ();

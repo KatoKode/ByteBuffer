@@ -1,6 +1,5 @@
 /*------------------------------------------------------------------------------
-    ByteBuffer Implementation in x86_64 Assembly Language with C
-    Interface
+    ByteBuffer Implementation in x86_64 Assembly Language with C Interface
 
     Copyright (C) 2025  J. McIntosh
 
@@ -24,23 +23,19 @@ int main (int argc, char **argv)
 {
   getNativeByteOrder();
 
-  bb_buffer_t *buffer = bb_buffer_alloc();
+  bytebuffer_t *buffer = bb_alloc();
 
-  bb_buffer_init(buffer, BUFFER_SIZE, NULL);
+  bb_init(buffer, BUFFER_SIZE, NULL);
 
   putValues(buffer);
 
-  bb_trip(buffer);
+  bb_flip(buffer);
 
   getValues(buffer);
 
-  toDouble();
+  bb_term(buffer);
 
-  toFloat();
-
-  bb_buffer_term(buffer);
-
-  bb_buffer_free(buffer);
+  bb_free(buffer);
 
   return 0;
 }
@@ -49,14 +44,14 @@ int main (int argc, char **argv)
 void getNativeByteOrder()
 {
   byte_order_t bo = bb_native_byte_order();
-  char bo_text [32] = { "BIG_ENDIAN" };
-  if (bo == LITTLE_END) strcpy(bo_text, "LITTLE_END");
-  else if (bo == NONE) strcpy(bo_text, "NONE");
+  char bo_text [32] = { "BIG ENDIAN" };
+  if (bo == LITTLE_END) strcpy(bo_text, "LITTLE ENDIAN");
+  else if (bo == NONE) strcpy(bo_text, "NONE?");
   printf("native byte order: %s\n", bo_text);
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-double getDouble (bb_buffer_t *buffer)
+double getDouble (bytebuffer_t *buffer)
 {
   (void) bb_get(buffer);
 
@@ -64,7 +59,7 @@ double getDouble (bb_buffer_t *buffer)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-float getfloat (bb_buffer_t *buffer)
+float getfloat (bytebuffer_t *buffer)
 {
   (void) bb_get(buffer);
 
@@ -72,7 +67,7 @@ float getfloat (bb_buffer_t *buffer)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-int16_t getI16 (bb_buffer_t *buffer)
+int16_t getI16 (bytebuffer_t *buffer)
 {
   (void) bb_get(buffer);
 
@@ -80,7 +75,7 @@ int16_t getI16 (bb_buffer_t *buffer)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-int32_t getI32 (bb_buffer_t *buffer)
+int32_t getI32 (bytebuffer_t *buffer)
 {
   (void) bb_get(buffer);
 
@@ -88,7 +83,7 @@ int32_t getI32 (bb_buffer_t *buffer)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-int64_t getI64 (bb_buffer_t *buffer)
+int64_t getI64 (bytebuffer_t *buffer)
 {
   (void) bb_get(buffer);
 
@@ -96,7 +91,7 @@ int64_t getI64 (bb_buffer_t *buffer)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-char * getText (bb_buffer_t *buffer)
+char * getText (bytebuffer_t *buffer)
 {
   size_t n = bb_get(buffer);
 
@@ -104,7 +99,7 @@ char * getText (bb_buffer_t *buffer)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // GETVALUES
-void getValues (bb_buffer_t *buffer)
+void getValues (bytebuffer_t *buffer)
 {
   char *text = getText(buffer);
 
@@ -112,9 +107,19 @@ void getValues (bb_buffer_t *buffer)
 
   free(text);
 
-  double dbl = getDouble(buffer);
+  union U {
+    double dbl;
+    uint64_t u64;
+    byte_t b[8];
+  } u;
 
-  printf("double: %1.11lf\n", dbl);
+  u.dbl = getDouble(buffer);
+#ifdef BB_DEBUG
+  printf("hex bytes of a double: ");
+  for (int i = 0; i < 8; ++i) printf("%02X, ", u.b[i]);
+  printf("== %1.11lf\n", u.dbl);
+#endif
+  printf("double: %1.11lf\n", u.dbl);
 
   text = getText(buffer);
 
@@ -165,15 +170,22 @@ void getValues (bb_buffer_t *buffer)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-void putDouble (bb_buffer_t *buffer, double const value)
+void putDouble (bytebuffer_t *buffer, double const value)
 {
   bb_put(buffer, (byte_t)8);
 
   bb_put_double(buffer, value);
+#ifdef BB_DEBUG
+  printf("DEBUG: %s: ", __func__);
+  for (int i = 6; i < 14; ++i)
+    printf("%02X, ", buffer->buffer[i]);
+  putchar('\n');
+  printf("DEBUG: %1.11lf\n",*(double*)(&buffer->buffer[6]));
+#endif
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-void putFloat (bb_buffer_t *buffer, float const value)
+void putFloat (bytebuffer_t *buffer, float const value)
 {
   bb_put(buffer, (byte_t)4);
 
@@ -181,7 +193,7 @@ void putFloat (bb_buffer_t *buffer, float const value)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-void putI16 (bb_buffer_t *buffer, int16_t const value)
+void putI16 (bytebuffer_t *buffer, int16_t const value)
 {
   bb_put(buffer, (byte_t)2);
 
@@ -189,7 +201,7 @@ void putI16 (bb_buffer_t *buffer, int16_t const value)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-void putI32 (bb_buffer_t *buffer, int32_t const value)
+void putI32 (bytebuffer_t *buffer, int32_t const value)
 {
   bb_put(buffer, (byte_t)4);
 
@@ -197,7 +209,7 @@ void putI32 (bb_buffer_t *buffer, int32_t const value)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-void putI64 (bb_buffer_t *buffer, int64_t const value)
+void putI64 (bytebuffer_t *buffer, int64_t const value)
 {
   bb_put(buffer, (byte_t)8);
 
@@ -205,7 +217,7 @@ void putI64 (bb_buffer_t *buffer, int64_t const value)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
-void putText (bb_buffer_t *buffer, char const *text)
+void putText (bytebuffer_t *buffer, char const *text)
 {
   size_t n = strlen(text);
 
@@ -215,13 +227,35 @@ void putText (bb_buffer_t *buffer, char const *text)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // PUTVALUES
-void putValues (bb_buffer_t *buffer)
+void putValues (bytebuffer_t *buffer)
 {
   putText(buffer, "TEXT");
+#ifdef BB_DEBUG
+// This code was used to display the order of bytes in a double.
+  union DU {
+    double dbl;
+    uint64_t u64;
+    byte_t b[8];
+  } du;
 
+  du.dbl = 0.00009876543;
+  printf("%s: ", __func__);
+  for (int i = 0; i < 8; ++i) printf("%02X, ", du.b[i]);
+  putchar('\n');
+#endif
   putDouble(buffer, 0.00009876543);
 
   putText(buffer, "TEXT 1");
+
+  union FU {
+    float flt;
+    uint32_t u32;
+    byte_t b[4];
+  } fu;
+
+  fu.flt = 1.05432;
+  for (int i = 0; i < 4; ++i) printf("%02X, ", fu.b[i]);
+  putchar('\n');
 
   putFloat(buffer, 1.05432);
 
@@ -243,30 +277,5 @@ void putValues (bb_buffer_t *buffer)
     (void) sprintf(txt, "TEST %02d", i);
     putText(buffer, txt);
   }
-}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// TODOUBLE
-void toDouble ()
-{
-  union U {
-    double    d;
-    byte_t    b [ sizeof(double) ];
-  } u;
-  u.d = 1234567890.0987654;
-  double e = bb_to_double(u.b[0], u.b[1], u.b[2], u.b[3], u.b[4], u.b[5], u.b[6],
-      u.b[7]);
-  printf("double u.d: %18.7lf\tdouble e: %18.7lf\n", u.d, e);
-}
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// TOFLOAT
-void toFloat ()
-{
-  union U {
-    float     f;
-    byte_t    b [ sizeof(float) ];
-  } u;
-  u.f = 1.098765;
-  float e = bb_to_float(u.b[0], u.b[1], u.b[2], u.b[3]);
-  printf("float u.f: %8.6f\tfloat e: %8.6f\n", u.f, e);
 }
 

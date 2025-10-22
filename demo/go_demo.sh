@@ -1,6 +1,5 @@
 #-------------------------------------------------------------------------------
-#   ByteBuffer Implementation in x86_64 Assembly Language with C
-#   Interface
+#   ByteBuffer Implementation in x86_64 Assembly Language with C Interface
 #
 #   Copyright (C) 2025  J. McIntosh
 #

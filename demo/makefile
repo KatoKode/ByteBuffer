@@ -17,11 +17,11 @@
 #   with this program; if not, write to the Free Software Foundation, Inc.,
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #-------------------------------------------------------------------------------
-demo: main.o ../bytebuffer/libbytebuffer.so
-	gcc -g -march=x86-64 -m64 -z noexecstack main.o \
-	../bytebuffer/libbytebuffer.so -o demo
+demo: main.o ../util/libutil.so ../bytebuffer/libbytebuffer.so
+	gcc -g -march=x86-64 -m64 -lm -z noexecstack -Wunused-function main.o \
+		../util/libutil.so ../bytebuffer/libbytebuffer.so -o demo
 main.o: main.c
-	gcc -g -march=x86-64 -m64 -Wall -c main.c -pthread -o main.o
+	gcc -g -march=x86-64 -m64 -Wall -lm -c main.c -pthread -o main.o
 .PHONY: clean
 clean:
 	rm -f demo main.o
