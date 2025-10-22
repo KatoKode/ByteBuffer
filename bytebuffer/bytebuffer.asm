@@ -703,7 +703,7 @@ bb_get_float:
       mov       rcx, SHIFT_24
       shlx      rbx, rax, rcx
       or        r10, rbx
-; move double value to register xmm0
+; move float value to register xmm0
       movq      xmm0, r10
 .return:
       ret
@@ -947,7 +947,7 @@ bb_get_uint16:
       mov       rcx, SHIFT_8
       shlx      rbx, rax, rcx
       or        r10, rbx
-; move double value to register xmm0
+; move uint16_t value to register rax
       mov       rax, r10
 .return:
       ret
@@ -1042,7 +1042,7 @@ bb_get_uint32:
       mov       rcx, SHIFT_24
       shlx      rbx, rax, rcx
       or        r10, rbx
-; move double value to register xmm0
+; move uint32_t value to register rax
       mov       rax, r10
 .return:
       ret
@@ -1166,7 +1166,7 @@ bb_get_uint64:
       mov       rcx, SHIFT_56
       shlx      rbx, rax, rcx
       or        r10, rbx
-; move double value to register xmm0
+; move uint64T value to register rax
       mov       rax, r10
 .epilogue:
       mov       rsp, rbp
@@ -1325,8 +1325,8 @@ bb_get_varchar_at:
       call      bb_get_varchar
 ; bb_set_index(bb, org_index);
       mov       rdi, QWORD [rbp - 8]
-      mov       rax, QWORD [rbp - 16]
-      mov       QWORD [rdi + bytebuffer.index], rax
+      mov       rcx, QWORD [rbp - 16]
+      mov       QWORD [rdi + bytebuffer.index], rcx
 ; epilogue
       mov       rsp, rbp
       pop       rbp
