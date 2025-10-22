@@ -1,6 +1,5 @@
 #-------------------------------------------------------------------------------
-#   ByteBuffer Implementation in x86_64 Assembly Language with C
-#   Interface
+#   ByteBuffer Implementation in x86_64 Assembly Language with C Interface
 #
 #   Copyright (C) 2025  J. McIntosh
 #
@@ -26,7 +25,15 @@ sep="---------------------------------------------------------------------------
 
 echo -e "${sep}"
 
-builtin cd ./bytebuffer/ || exit -1
+builtin cd ./util/ || exit -1
+
+make clean; make
+
+test -e ./libutil.so || exit -1
+
+echo -e "${sep}"
+
+builtin cd ../bytebuffer/ || exit -1
 
 make clean; make
 
