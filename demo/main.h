@@ -32,6 +32,9 @@
 #define INDEX_160   160
 #define INDEX_64    170
 
+char const sep[80] =
+"- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -";
+
 void getNativeByteOrder();
 
 void getBufferMeta (bytebuffer_t *);
@@ -64,6 +67,3 @@ void putTextAt (bytebuffer_t *, size_t, char const *);
 
 void putValues (bytebuffer_t *);
 void getValues (bytebuffer_t *);
-
-void toDouble ();
-void toFloat ();
