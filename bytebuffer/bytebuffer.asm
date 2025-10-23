@@ -550,13 +550,9 @@ bb_get_char_at:
 ;
 ;   xmm0 = double value
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-;8E, 45, D4, 2A, 09, E4, 19, 3F
+;
       global bb_get_double:function
 bb_get_double:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
       push      rbx
 ; clear xmm0 register
       xorpd     xmm0, xmm0
@@ -564,53 +560,66 @@ bb_get_double:
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 8
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      ja        .epilogue
-; get bytes
-      xor       r10, r10
+      ja        .return
+; byte_t *bp = &bb->buffer[bb->index];
+      mov       rax, QWORD [rdi + bytebuffer.index]
+      add       rax, QWORD [rdi + bytebuffer.buffer]
+      mov       rsi, rax
 ; byte 0
-      call      bb_get
-      or        r10, rax
+      xor       rdx, rdx
+      xor       rax, rax
+      mov       al, BYTE [rsi]
+      or        rdx, rax
+      inc       rsi
 ; byte 1
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_8
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 2
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_16
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 3
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_24
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 4
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_32
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 5
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_40
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 6
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_48
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 7
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_56
       shlx      rbx, rax, rcx
-      or        r10, rbx
-; move double value to register xmm0
-      movq      xmm0, r10
-.epilogue:
+      or        rdx, rbx
+; bb->index += 8;
+      mov       rax, QWORD [rdi + bytebuffer.index]
+      add       rax, 8
+      mov       QWORD [rdi + bytebuffer.index], rax
+; return double value
+      movq      xmm0, rdx
+.return:
       pop       rbx
-      mov       rsp, rbp
-      pop       rbp
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -625,11 +634,6 @@ bb_get_double:
 ;   rdi = bb
 ;   rsi = index
 ;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = org_index (bb->index)
-;
 ; return:
 ;
 ;   xmm0 = double value
@@ -637,26 +641,68 @@ bb_get_double:
 ;
       global bb_get_double_at:function
 bb_get_double_at:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = bb_get_index(bb);
-      call      bb_get_index
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      call      bb_set_index
-; bb_get_double(bb);
-      call      bb_get_double
-; bb_set_index(bb, org_index);
-      mov       rdi, QWORD [rbp - 8]
-      mov       rsi, QWORD [rbp - 16]
-      call      bb_set_index
-; epilogue
-      mov       rsp, rbp
-      pop       rbp
+      push      rbx
+; if (index + 8 >= bb->bound) return DBLNAN;
+      xorpd     xmm0, xmm0
+      mov       rax, rsi
+      add       rax, 8
+      cmp       rax, QWORD [rdi + bytebuffer.bound]
+      ja        .return
+; byte_t *bp = &bb->buffer[index];
+      mov       rax, rsi
+      add       rax, QWORD [rdi + bytebuffer.buffer]
+      mov       rsi, rax
+; byte 0
+      xor       rdx, rdx
+      xor       rax, rax
+      mov       al, BYTE [rsi]
+      or        rdx, rax
+      inc       rsi
+; byte 1
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_8
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 2
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_16
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 3
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_24
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 4
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_32
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 5
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_40
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 6
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_48
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 7
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_56
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+; return double value
+      movq      xmm0, rdx
+.return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -677,35 +723,48 @@ bb_get_double_at:
 ;
       global bb_get_float:function
 bb_get_float:
-; if (bb->index + 4 >= bb->bound) return FLTNAN;
-      xorps     xmm0, xmm0
+      push      rbx
+; if (bb->index + 4 >= bb->bound) return 0;
+      xorpd     xmm0, xmm0
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 4
       cmp       rax, QWORD [rdi + bytebuffer.bound]
       ja        .return
-; get bytes
-      xor       r10, r10
+; byte_t *bp = &bb->buffer[bb->index];
+      mov       rax, QWORD [rdi + bytebuffer.index]
+      add       rax, QWORD [rdi + bytebuffer.buffer]
+      mov       rsi, rax
 ; byte 0
-      call      bb_get
-      or        r10, rax
+      xor       rdx, rdx
+      xor       rax, rax
+      mov       al, BYTE [rsi]
+      or        rdx, rax
+      inc       rsi
 ; byte 1
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_8
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 2
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_16
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 3
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_24
       shlx      rbx, rax, rcx
-      or        r10, rbx
-; move float value to register xmm0
-      movq      xmm0, r10
+      or        rdx, rbx
+; bb->index += 4;
+      mov       rax, QWORD [rdi + bytebuffer.index]
+      add       rax, 4
+      mov       QWORD [rdi + bytebuffer.index], rax
+; return uint32_t value
+      movq      xmm0, rdx
 .return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -720,11 +779,6 @@ bb_get_float:
 ;   rdi = bb
 ;   rsi = index
 ;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = bb->index
-;
 ; return:
 ;
 ;   xmm0 = float value
@@ -732,26 +786,42 @@ bb_get_float:
 ;
       global bb_get_float_at:function
 bb_get_float_at:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = bb_get_index(bb);
-      call      bb_get_index
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      call      bb_set_index
-; bb_get_float(bb);
-      call      bb_get_float
-; bb_set_index(bb, org_index);
-      mov       rdi, QWORD [rbp - 8]
-      mov       rsi, QWORD [rbp - 16]
-      call      bb_set_index
-; epilogue
-      mov       rsp, rbp
-      pop       rbp
+      push      rbx
+; if (index + 4 >= bb->bound) return 0;
+      xorpd     xmm0, xmm0
+      mov       rax, rsi
+      add       rax, 4
+      cmp       rax, QWORD [rdi + bytebuffer.bound]
+      ja        .return
+; byte_t *bp = &bb->buffer[index];
+      add       rsi, QWORD [rdi + bytebuffer.buffer]
+; byte 0
+      xor       rdx, rdx
+      xor       rax, rax
+      mov       al, BYTE [rsi]
+      or        rdx, rax
+      inc       rsi
+; byte 1
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_8
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 2
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_16
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 3
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_24
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+; return uint32_t value
+      movq      xmm0, rdx
+.return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -919,11 +989,6 @@ bb_get_int64_at:
 ;
 ;   rdi = bb
 ;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = bb->index
-;
 ; return:
 ;
 ;   ax = uint16_t value
@@ -931,25 +996,36 @@ bb_get_int64_at:
 ;
       global bb_get_uint16:function
 bb_get_uint16:
+      push      rbx
 ; if (bb->index + 2 >= bb->bound) return 0;
       xor       rax, rax
       mov       rcx, QWORD [rdi + bytebuffer.index]
       add       rcx, 2
       cmp       rcx, QWORD [rdi + bytebuffer.bound]
       ja        .return
-; get bytes
-      xor       r10, r10
+; byte_t *bp = &bb->buffer[bb->index];
+      mov       rax, QWORD [rdi + bytebuffer.index]
+      add       rax, QWORD [rdi + bytebuffer.buffer]
+      mov       rsi, rax
 ; byte 0
-      call      bb_get
-      or        r10, rax
+      xor       rdx, rdx
+      xor       rax, rax
+      mov       al, BYTE [rsi]
+      or        rdx, rax
+      inc       rsi
 ; byte 1
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_8
       shlx      rbx, rax, rcx
-      or        r10, rbx
-; move uint16_t value to register rax
-      mov       rax, r10
+      or        rdx, rbx
+; bb->index += 2;
+      mov       rax, QWORD [rdi + bytebuffer.index]
+      add       rax, 2
+      mov       QWORD [rdi + bytebuffer.index], rax
+; return uint16_t value
+      mov       rax, rdx
 .return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -964,12 +1040,6 @@ bb_get_uint16:
 ;   rdi = bb
 ;   rsi = index
 ;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = bb->index
-;   QWORD [rbp - 24]  = uint16_t value
-;
 ; return:
 ;
 ;   ax = uint16_t value
@@ -977,29 +1047,32 @@ bb_get_uint16:
 ;
       global bb_get_uint16_at:function
 bb_get_uint16_at:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 24
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = bb_get_index(bb);
-      call      bb_get_index
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      call      bb_set_index
-; bb_get_float(bb);
-      call      bb_get_uint16
-      mov       QWORD [rbp - 24], rax
-; bb_set_index(bb, org_index);
-      mov       rdi, QWORD [rbp - 8]
-      mov       rsi, QWORD [rbp - 16]
-      call      bb_set_index
+      push      rbx
+; if (index + 2 >= bb->bound) return 0;
+      xor       rax, rax
+      mov       rcx, rsi
+      add       rcx, 2
+      cmp       rcx, QWORD [rdi + bytebuffer.bound]
+      ja        .return
+; byte_t *bp = &bb->buffer[index];
+      mov       rax, rsi
+      add       rax, QWORD [rdi + bytebuffer.buffer]
+      mov       rsi, rax
+; byte 0
+      xor       rdx, rdx
+      xor       rax, rax
+      mov       al, BYTE [rsi]
+      or        rdx, rax
+      inc       rsi
+; byte 1
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_8
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
 ; return uint16_t value
-      mov       rax, QWORD [rbp - 24]
-; epilogue
-      mov       rsp, rbp
-      pop       rbp
+      mov       rax, rdx
+.return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1020,35 +1093,48 @@ bb_get_uint16_at:
 ;
       global bb_get_uint32:function
 bb_get_uint32:
+      push      rbx
 ; if (bb->index + 4 >= bb->bound) return 0;
       xor       rax, rax
       mov       rcx, QWORD [rdi + bytebuffer.index]
       add       rcx, 4
       cmp       rcx, QWORD [rdi + bytebuffer.bound]
       ja        .return
-; get bytes
-      xor       r10, r10
+; byte_t *bp = &bb->buffer[bb->index];
+      mov       rax, QWORD [rdi + bytebuffer.index]
+      add       rax, QWORD [rdi + bytebuffer.buffer]
+      mov       rsi, rax
 ; byte 0
-      call      bb_get
-      or        r10, rax
+      xor       rdx, rdx
+      xor       rax, rax
+      mov       al, BYTE [rsi]
+      or        rdx, rax
+      inc       rsi
 ; byte 1
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_8
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 2
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_16
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 3
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_24
       shlx      rbx, rax, rcx
-      or        r10, rbx
-; move uint32_t value to register rax
-      mov       rax, r10
+      or        rdx, rbx
+; bb->index += 4;
+      mov       rax, QWORD [rdi + bytebuffer.index]
+      add       rax, 4
+      mov       QWORD [rdi + bytebuffer.index], rax
+; return uint32_t value
+      mov       rax, rdx
 .return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1063,12 +1149,6 @@ bb_get_uint32:
 ;   rdi = bb
 ;   rsi = index
 ;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = bb->index
-;   QWORD [rbp - 24]  = uint32_t value
-;
 ; return:
 ;
 ;   eax = uint32_t value
@@ -1076,29 +1156,44 @@ bb_get_uint32:
 ;
       global bb_get_uint32_at:function
 bb_get_uint32_at:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 24
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = bb_get_index(bb);
-      call      bb_get_index
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      call      bb_set_index
-; bb_get_float(bb);
-      call      bb_get_uint32
-      mov       QWORD [rbp - 24], rax
-; bb_set_index(bb, org_index);
-      mov       rdi, QWORD [rbp - 8]
-      mov       rsi, QWORD [rbp - 16]
-      call      bb_set_index
+      push      rbx
+; if (index + 4 >= bb->bound) return 0;
+      xor       rax, rax
+      mov       rcx, rsi
+      add       rcx, 4
+      cmp       rcx, QWORD [rdi + bytebuffer.bound]
+      ja        .return
+; byte_t *bp = &bb->buffer[index];
+      mov       rax, rsi
+      add       rax, QWORD [rdi + bytebuffer.buffer]
+      mov       rsi, rax
+; byte 0
+      xor       rdx, rdx
+      xor       rax, rax
+      mov       al, BYTE [rsi]
+      or        rdx, rax
+      inc       rsi
+; byte 1
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_8
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 2
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_16
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 3
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_24
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
 ; return uint32_t value
-      mov       rax, QWORD [rbp - 24]
-; epilogue
-      mov       rsp, rbp
-      pop       rbp
+      mov       rax, rdx
+.return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1112,11 +1207,6 @@ bb_get_uint32_at:
 ;
 ;   rdi = bb
 ;
-; stack:
-;
-;   QWORD [rbp - 8]   = b7
-;   QWORD [rbp - 16]  = b6
-;
 ; return:
 ;
 ;   rax = uint64_t value
@@ -1124,61 +1214,72 @@ bb_get_uint32_at:
 ;
       global bb_get_uint64:function
 bb_get_uint64:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
+      push      rbx
 ; if (bb->index + 8 >= bb->bound) return 0;
       xor       rax, rax
       mov       rcx, QWORD [rdi + bytebuffer.index]
       add       rcx, 8
       cmp       rcx, QWORD [rdi + bytebuffer.bound]
-      ja        .epilogue
-; get bytes
-      xor       r10, r10
+      ja        .return
+; byte_t *bp = &bb->buffer[bb->index];
+      mov       rax, QWORD [rdi + bytebuffer.index]
+      add       rax, QWORD [rdi + bytebuffer.buffer]
+      mov       rsi, rax
 ; byte 0
-      call      bb_get
-      or        r10, rax
+      xor       rdx, rdx
+      xor       rax, rax
+      mov       al, BYTE [rsi]
+      or        rdx, rax
+      inc       rsi
 ; byte 1
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_8
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 2
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_16
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 3
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_24
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 4
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_32
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 5
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_40
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 6
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_48
       shlx      rbx, rax, rcx
-      or        r10, rbx
+      or        rdx, rbx
+      inc       rsi
 ; byte 7
-      call      bb_get
+      mov       al, BYTE [rsi]
       mov       rcx, SHIFT_56
       shlx      rbx, rax, rcx
-      or        r10, rbx
-; move uint64T value to register rax
-      mov       rax, r10
-.epilogue:
-      mov       rsp, rbp
-      pop       rbp
+      or        rdx, rbx
+; bb->index += 8;
+      mov       rax, QWORD [rdi + bytebuffer.index]
+      add       rax, 8
+      mov       QWORD [rdi + bytebuffer.index], rax
+; return uint64_t value
+      mov       rax, rdx
+.return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1193,12 +1294,6 @@ bb_get_uint64:
 ;   rdi = bb
 ;   rsi = index
 ;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = org_index (bb->index)
-;   QWROD [rbp - 24]  = uint64_t value
-;
 ; return:
 ;
 ;   rax = uint64_t value
@@ -1206,29 +1301,68 @@ bb_get_uint64:
 ;
       global bb_get_uint64_at:function
 bb_get_uint64_at:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 24
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = bb_get_index(bb);
-      call      bb_get_index
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      call      bb_set_index
-; bb_get_uint64(bb);
-      call      bb_get_uint64
-      mov       QWORD [rbp - 24], rax
-; bb_set_index(bb, org_index);
-      mov       rdi, QWORD [rbp - 8]
-      mov       rsi, QWORD [rbp - 16]
-      call      bb_set_index
+      push      rbx
+; if (index + 8 >= bb->bound) return 0;
+      xor       rax, rax
+      mov       rcx, rsi
+      add       rcx, 8
+      cmp       rcx, QWORD [rdi + bytebuffer.bound]
+      ja        .return
+; byte_t *bp = &bb->buffer[index];
+      mov       rax, rsi
+      add       rax, QWORD [rdi + bytebuffer.buffer]
+      mov       rsi, rax
+; byte 0
+      xor       rdx, rdx
+      xor       rax, rax
+      mov       al, BYTE [rsi]
+      or        rdx, rax
+      inc       rsi
+; byte 1
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_8
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 2
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_16
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 3
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_24
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 4
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_32
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 5
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_40
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 6
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_48
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
+      inc       rsi
+; byte 7
+      mov       al, BYTE [rsi]
+      mov       rcx, SHIFT_56
+      shlx      rbx, rax, rcx
+      or        rdx, rbx
 ; return uint64_t value
-      mov       rax, QWORD [rbp - 24]
-; epilogue
-      mov       rsp, rbp
-      pop       rbp
+      mov       rax, rdx
+.return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1313,8 +1447,9 @@ bb_get_varchar:
 ; stack:
 ;
 ;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = org_index (bb->index)
-;   QWORD [rbp - 24]  = return value
+;   QWORD [rbp - 16]  = rsi (size)
+;   QWORD [rbp - 24]  = rdx (index)
+;   QWORD [rbp - 32]  = (buffer)
 ;
 ; return:
 ;
@@ -1329,21 +1464,31 @@ bb_get_varchar_at:
       sub       rsp, 24
 ; QWORD [rbp - 8] = rdi (bb)
       mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = bb_get_index(bb);
-      mov       rax, QWORD [rdi + bytebuffer.index]
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      mov       QWORD [rdi + bytebuffer.index], rsi
-; bb_get_uint64(bb);
-      call      bb_get_varchar
-      mov       QWORD [rbp - 24], rax
-; bb_set_index(bb, org_index);
+; QWORD [rbp - 16] = rsi (size)
+      mov       QWORD [rbp - 16], rsi
+; QWORD [rbp - 24] = rdx (index)
+      mov       QWORD [rbp - 24], rdx
+; if (index + size >= bb->bound) return NULL;
+      mov       rax, rsi
+      add       rax, rdx
+      cmp       rax, QWORD [rdi + bytebuffer.bound]
+      jae       .epilogue
+; if ((buffer = calloc(1, size)) == NULL) return NULL;
+      mov       rdi, 1
+      inc       rsi
+      ALIGN_STACK_AND_CALL rbx, calloc, wrt, ..plt
+      mov       QWORD [rbp - 32], rax
+      test      rax, rax
+      jz        .epilogue
+; (void)memmove64(buffer, &bb->buffer[bb->index], size);
       mov       rdi, QWORD [rbp - 8]
-      mov       rax, QWORD [rbp - 16]
-      mov       QWORD [rdi + bytebuffer.index], rax
-; return varchar value
-      mov       rax, QWORD [rbp - 24]
-; epilogue
+      mov       rax, QWORD [rdi + bytebuffer.buffer]
+      add       rax, QWORD [rbp - 24]
+      mov       rsi, rax
+      mov       rdi, QWORD [rbp - 32]
+      mov       rdx, QWORD [rbp - 16]
+      call      memmove64 wrt ..plt
+.epilogue:
       mov       rsp, rbp
       pop       rbp
       ret
@@ -1364,11 +1509,12 @@ bb_get_varchar_at:
 ;
       global bb_put:function
 bb_put:
-      call      bb_has_more
-      test      rax, rax
-      jz        .return
-      mov       rax, QWORD [rdi + bytebuffer.buffer]
-      add       rax, QWORD [rdi + bytebuffer.index]
+; if (bb->index >= bb->bound) return;
+      mov       rax, QWORD [rdi + bytebuffer.index]
+      cmp       rax, QWORD [rdi + bytebuffer.bound]
+      jae       .return
+; bb->buffer[index] = value;
+      add       rax, QWORD [rdi + bytebuffer.buffer]
       mov       BYTE [rax], sil
       mov       rax, QWORD [rdi + bytebuffer.index]
       inc       rax
@@ -1381,7 +1527,7 @@ bb_put:
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ; C definition
 ;
-;   void bb_put (bytebuffer_t *bb, size_t index, byte_t value);
+;   void bb_put_at (bytebuffer_t *bb, size_t index, byte_t value);
 ;
 ; param:
 ;
@@ -1389,35 +1535,18 @@ bb_put:
 ;   rsi = index
 ;   rdx = value
 ;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = org_index (bb->index)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_put_at:function
 bb_put_at:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = bb_get_index(bb);
-      mov       rax, QWORD [rdi + bytebuffer.index]
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      mov       QWORD [rdi + bytebuffer.index], rsi
-; bb_put(bb, value);
-      mov       rsi, rdx
-      call      bb_put_at
-; bb_set_index(bb, org_index);
-      mov       rdi, QWORD [rbp - 8]
-      mov       rax, QWORD [rbp - 16]
-      mov       QWORD [rdi + bytebuffer.index], rax
-; epilogue
-      mov       rsp, rbp
-      pop       rbp
+; if (index >= bb->bound) return;
+      mov       rax, rsi
+      cmp       rax, QWORD [rdi + bytebuffer.bound]
+      jae       .return
+; bb->buffer[index] = value;
+      add       rax, QWORD [rdi + bytebuffer.buffer]
+      mov       BYTE [rax], dl
+.return:
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1436,16 +1565,7 @@ bb_put_at:
 ;
       global bb_put_char:function
 bb_put_char:
-      call      bb_has_more
-      test      rax, rax
-      jz        .return
-      mov       rax, QWORD [rdi + bytebuffer.buffer]
-      add       rax, QWORD [rdi + bytebuffer.index]
-      mov       BYTE [rax], sil
-      mov       rax, QWORD [rdi + bytebuffer.index]
-      inc       rax
-      mov       QWORD [rdi + bytebuffer.index], rax
-.return:
+      call      bb_put
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1460,36 +1580,11 @@ bb_put_char:
 ;   rdi = bb
 ;   rsi = index
 ;   rdx = value
-;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = org_index (bb->index)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_put_char_at:function
 bb_put_char_at:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = bb_get_index(bb);
-      mov       rax, QWORD [rdi + bytebuffer.index]
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      mov       QWORD [rdi + bytebuffer.index], rsi
-; bb_put(bb, value);
-      mov       rsi, rdx
-      call      bb_put_char
-; bb_set_index(bb, org_index);
-      mov       rdi, QWORD [rbp - 8]
-      mov       rax, QWORD [rbp - 16]
-      mov       QWORD [rdi + bytebuffer.index], rax
-; epilogue
-      mov       rsp, rbp
-      pop       rbp
+      call      bb_put_at
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1503,27 +1598,17 @@ bb_put_char_at:
 ;
 ;   rdi   = bb
 ;   xmm0  = value
-;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_put_double:function
 bb_put_double:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 8
       push      rbx
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
 ; if (bb->index + 8 >= bb->bound) return;
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 8
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .epilogue
-;
+      jae       .return
+; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rax, QWORD [rdi + bytebuffer.index]
       mov       rsi, rax
@@ -1589,14 +1674,12 @@ bb_put_double:
       shrx      rbx, rax, rcx
       mov       BYTE [rsi], bl
       inc       rsi
-; update index of bytebuffer
+; bb->index += 8;
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 8
       mov       QWORD [rdi + bytebuffer.index], rax
-.epilogue:
+.return:
       pop       rbx
-      mov       rsp, rbp
-      pop       rbp
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1611,36 +1694,83 @@ bb_put_double:
 ;   rdi   = bb
 ;   rsi   = index
 ;   xmm0  = value
-;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = org_index (bb->index)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_put_double_at:function
 bb_put_double_at:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = org_index (bb->index);
-      mov       rax, QWORD [rdi + bytebuffer.index]
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      mov       QWORD [rdi + bytebuffer.index], rsi
-; bb_put_double(bb, value);
-      mov       rsi, rdx
-      call      bb_put_double
-; bb_set_index(bb, org_index);
-      mov       rdi, QWORD [rbp - 8]
-      mov       rax, QWORD [rbp - 16]
-      mov       QWORD [rdi + bytebuffer.index], rax
-; epilogue
-      mov       rsp, rbp
-      pop       rbp
+      push      rbx
+; if (index + 8 >= bb->bound) return;
+      mov       rax, rsi
+      add       rax, 8
+      cmp       rax, QWORD [rdi + bytebuffer.bound]
+      jae       .return
+; byte_t *bp = &bb->buffer[index];
+      mov       rax, QWORD [rdi + bytebuffer.buffer]
+      add       rax, rsi
+      mov       rsi, rax
+; put byte 0 of double value into bytebuffer
+      movq      rax, xmm0
+      mov       rbx, MASK_64_BYTE_0
+      and       rax, rbx
+      mov       BYTE [rsi], al
+      inc       rsi
+; put byte 1 of double value into bytebuffer
+      movq      rax, xmm0
+      mov       rbx, MASK_64_BYTE_1
+      and       rax, rbx
+      mov       rcx, SHIFT_8
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 2 of double value into bytebuffer
+      movq      rax, xmm0
+      mov       rbx, MASK_64_BYTE_2
+      and       rax, rbx
+      mov       rcx, SHIFT_16
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 3 of double value into bytebuffer
+      movq      rax, xmm0
+      mov       rbx, MASK_64_BYTE_3
+      and       rax, rbx
+      mov       rcx, SHIFT_24
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 4 of double value into bytebuffer
+      movq      rax, xmm0
+      mov       rbx, MASK_64_BYTE_4
+      and       rax, rbx
+      mov       rcx, SHIFT_32
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 5 of double value into bytebuffer
+      movq      rax, xmm0
+      mov       rbx, MASK_64_BYTE_5
+      and       rax, rbx
+      mov       rcx, SHIFT_40
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 6 of double value into bytebuffer
+      movq      rax, xmm0
+      mov       rbx, MASK_64_BYTE_6
+      and       rax, rbx
+      mov       rcx, SHIFT_48
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 7 of double value into bytebuffer
+      movq      rax, xmm0
+      mov       rbx, MASK_64_BYTE_7
+      and       rax, rbx
+      mov       rcx, SHIFT_56
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+.return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1654,28 +1784,18 @@ bb_put_double_at:
 ;
 ;   rdi   = bb
 ;   xmm0  = value
-;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_put_float:function
 bb_put_float:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 8
       push      rbx
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
 ; if (bb->index + 4 >= bb->bound) return;
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 4
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .epilogue
-;
-      mov       rax, qword [rdi + bytebuffer.buffer]
+      jae       .return
+; byte_t *bp = bb->buffer[bb->index];
+      mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rax, QWORD [rdi + bytebuffer.index]
       mov       rsi, rax
 ; put byte 0 of float value into bytebuffer
@@ -1707,15 +1827,12 @@ bb_put_float:
       mov       rcx, SHIFT_24
       shrx      rbx, rax, rcx
       mov       BYTE [rsi], bl
-      inc       rsi
 ; update index of bytebuffer
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 4
       mov       QWORD [rdi + bytebuffer.index], rax
-.epilogue:
+.return:
       pop       rbx
-      mov       rsp, rbp
-      pop       rbp
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1730,36 +1847,50 @@ bb_put_float:
 ;   rdi   = bb
 ;   rsi   = index
 ;   xmm0  = value
-;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = org_index (bb->index)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_put_float_at:function
 bb_put_float_at:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = org_index (bb->index);
-      mov       rax, QWORD [rdi + bytebuffer.index]
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      mov       QWORD [rdi + bytebuffer.index], rsi
-; bb_put_float(bb, value);
-      mov       rsi, rdx
-      call      bb_put_float
-; bb_set_index(bb, org_index);
-      mov       rdi, QWORD [rbp - 8]
-      mov       rax, QWORD [rbp - 16]
-      mov       QWORD [rdi + bytebuffer.index], rax
-; epilogue
-      mov       rsp, rbp
-      pop       rbp
+      push      rbx
+; if (index + 4 >= bb->bound) return;
+      mov       rax, rsi
+      add       rax, 4
+      cmp       rax, QWORD [rdi + bytebuffer.bound]
+      jae       .return
+; byte_t *bp = bb->buffer[bb->index];
+      mov       rax, QWORD [rdi + bytebuffer.buffer]
+      add       rsi, rax
+; put byte 0 of float value into bytebuffer
+      movq      rax, xmm0
+      mov       rbx, MASK_64_BYTE_0
+      and       rax, rbx
+      mov       BYTE [rsi], al
+      inc       rsi
+; put byte 1 of float value into bytebuffer
+      movq      rax, xmm0
+      mov       rbx, MASK_64_BYTE_1
+      and       rax, rbx
+      mov       rcx, SHIFT_8
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 2 of float value into bytebuffer
+      movq      rax, xmm0
+      mov       rbx, MASK_64_BYTE_2
+      and       rax, rbx
+      mov       rcx, SHIFT_16
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 3 of float value into bytebuffer
+      movq      rax, xmm0
+      mov       rbx, MASK_64_BYTE_3
+      and       rax, rbx
+      mov       rcx, SHIFT_24
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+.return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1884,55 +2015,39 @@ bb_put_int64_at:
 ;
 ;   rdi = bb
 ;   rsi = value
-;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = si (value)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_put_uint16:function
 bb_put_uint16:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
       push      rbx
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = si (value)
-      mov       QWORD [rbp - 16], rsi
 ; if (bb->index + 2 >= bb->bound) return;
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 2
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .epilogue
-; calculate address in bytebuffer where uint16_t will be put
+      jae       .return
+; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rax, QWORD [rdi + bytebuffer.index]
-      mov       rsi, rax
+      mov       r8, rax
 ; put byte 0 of uint16_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_0
       and       rax, rbx
-      mov       BYTE [rsi], al
-      inc       rsi
+      mov       BYTE [r8], al
+      inc       r8
 ; put byte 1 of uint16_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_1
       and       rax, rbx
       mov       rcx, SHIFT_8
       shrx      rbx, rax, rcx
-      mov       BYTE [rsi], bl
-      inc       rsi
-; update index of bytebuffer
+      mov       BYTE [r8], bl
+; bb->index += 2;
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 2
       mov       QWORD [rdi + bytebuffer.index], rax
-.epilogue:
+.return:
       pop       rbx
-      mov       rsp, rbp
-      pop       rbp
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1947,36 +2062,34 @@ bb_put_uint16:
 ;   rdi = bb
 ;   rsi = index
 ;   rdx = value
-;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = org_index (bb->index)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_put_uint16_at:function
 bb_put_uint16_at:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = org_index (bb->index);
-      mov       rax, QWORD [rdi + bytebuffer.index]
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      mov       QWORD [rdi + bytebuffer.index], rsi
-; bb_put_uint16(bb, value);
-      mov       rsi, rdx
-      call      bb_put_uint16
-; bb_set_index(bb, org_index);
-      mov       rdi, QWORD [rbp - 8]
-      mov       rax, QWORD [rbp - 16]
-      mov       QWORD [rdi + bytebuffer.index], rax
-; epilogue
-      mov       rsp, rbp
-      pop       rbp
+      push      rbx
+; if (index + 2 >= bb->bound) return;
+      mov       rax, rsi
+      add       rax, 2
+      cmp       rax, QWORD [rdi + bytebuffer.bound]
+      jae       .return
+; byte_t *bp = &bb->buffer[index];
+      mov       rax, QWORD [rdi + bytebuffer.buffer]
+      add       rsi, rax
+; put byte 0 of uint16_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_0
+      and       rax, rbx
+      mov       BYTE [rsi], al
+      inc       rsi
+; put byte 1 of uint16_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_1
+      and       rax, rbx
+      mov       rcx, SHIFT_8
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+.return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1990,71 +2103,56 @@ bb_put_uint16_at:
 ;
 ;   rdi = bb
 ;   rsi = value
-;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = rsi (value)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_put_uint32:function
 bb_put_uint32:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
       push      rbx
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = rsi (value)
-      mov       QWORD [rbp - 16], rsi
 ; if (bb->index + 4 >= bb->bound) return;
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 4
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .epilogue
-; calculate address in bytebuffer where uint32_t will be put
+      jae       .return
+; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, qword [rdi + bytebuffer.buffer]
       add       rax, QWORD [rdi + bytebuffer.index]
-      mov       rsi, rax
+      mov       r8, rax
 ; put byte 0 of uint32_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_0
       and       rax, rbx
-      mov       BYTE [rsi], al
-      inc       rsi
+      mov       BYTE [r8], al
+      inc       r8
 ; put byte 1 of uint32_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_1
       and       rax, rbx
       mov       rcx, SHIFT_8
       shrx      rbx, rax, rcx
-      mov       BYTE [rsi], bl
-      inc       rsi
+      mov       BYTE [r8], bl
+      inc       r8
 ; put byte 2 of uint32_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_2
       and       rax, rbx
       mov       rcx, SHIFT_16
       shrx      rbx, rax, rcx
-      mov       BYTE [rsi], bl
-      inc       rsi
+      mov       BYTE [r8], bl
+      inc       r8
 ; put byte 3 of uint32_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_3
       and       rax, rbx
       mov       rcx, SHIFT_24
       shrx      rbx, rax, rcx
-      mov       BYTE [rsi], bl
-      inc       rsi
+      mov       BYTE [r8], bl
+      inc       r8
 ; update index of bytebuffer
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 4
       mov       QWORD [rdi + bytebuffer.index], rax
-.epilogue:
+.return:
       pop       rbx
-      mov       rsp, rbp
-      pop       rbp
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2069,36 +2167,50 @@ bb_put_uint32:
 ;   rdi = bb
 ;   rsi = index
 ;   rdx = value
-;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = org_index (bb->index)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_put_uint32_at:function
 bb_put_uint32_at:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = org_index (bb->index);
-      mov       rax, QWORD [rdi + bytebuffer.index]
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      mov       QWORD [rdi + bytebuffer.index], rsi
-; bb_put_uint32(bb, value);
-      mov       rsi, rdx
-      call      bb_put_uint32
-; bb_set_index(bb, org_index);
-      mov       rdi, QWORD [rbp - 8]
-      mov       rax, QWORD [rbp - 16]
-      mov       QWORD [rdi + bytebuffer.index], rax
-; epilogue
-      mov       rsp, rbp
-      pop       rbp
+      push      rbx
+; if (index + 4 >= bb->bound) return;
+      mov       rax, rsi
+      add       rax, 4
+      cmp       rax, QWORD [rdi + bytebuffer.bound]
+      jae       .return
+; byte_t *bp = &bb->buffer[index];
+      mov       rax, qword [rdi + bytebuffer.buffer]
+      add       rsi, rax
+; put byte 0 of uint32_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_0
+      and       rax, rbx
+      mov       BYTE [rsi], al
+      inc       rsi
+; put byte 1 of uint32_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_1
+      and       rax, rbx
+      mov       rcx, SHIFT_8
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 2 of uint32_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_2
+      and       rax, rbx
+      mov       rcx, SHIFT_16
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 3 of uint32_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_3
+      and       rax, rbx
+      mov       rcx, SHIFT_24
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+.return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2112,103 +2224,88 @@ bb_put_uint32_at:
 ;
 ;   rdi = bb
 ;   rsi = value
-;
-; stack:
-;
-;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = rsi (value)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_put_uint64:function
 bb_put_uint64:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 8
       push      rbx
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = rsi (value)
-      mov       QWORD [rbp - 16], rsi
 ; if (bb->index + 8 >= bb->bound) return;
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 8
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .epilogue
-;
+      jae       .return
+; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rax, QWORD [rdi + bytebuffer.index]
-      mov       rsi, rax
+      mov       r8, rax
 ; put byte 0 of uint64_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_0
       and       rax, rbx
-      mov       BYTE [rsi], al
-      inc       rsi
+      mov       BYTE [r8], al
+      inc       r8
 ; put byte 1 of uint64_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_1
       and       rax, rbx
       mov       rcx, SHIFT_8
       shrx      rbx, rax, rcx
-      mov       BYTE [rsi], bl
-      inc       rsi
+      mov       BYTE [r8], bl
+      inc       r8
 ; put byte 2 of uint64_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_2
       and       rax, rbx
       mov       rcx, SHIFT_16
       shrx      rbx, rax, rcx
-      mov       BYTE [rsi], bl
-      inc       rsi
+      mov       BYTE [r8], bl
+      inc       r8
 ; put byte 3 of uint64_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_3
       and       rax, rbx
       mov       rcx, SHIFT_24
       shrx      rbx, rax, rcx
-      mov       BYTE [rsi], bl
-      inc       rsi
+      mov       BYTE [r8], bl
+      inc       r8
 ; put byte 4 of uint64_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_4
       and       rax, rbx
       mov       rcx, SHIFT_32
       shrx      rbx, rax, rcx
-      mov       BYTE [rsi], bl
-      inc       rsi
+      mov       BYTE [r8], bl
+      inc       r8
 ; put byte 5 of uint64_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_5
       and       rax, rbx
       mov       rcx, SHIFT_40
       shrx      rbx, rax, rcx
-      mov       BYTE [rsi], bl
-      inc       rsi
+      mov       BYTE [r8], bl
+      inc       r8
 ; put byte 6 of uint64_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_6
       and       rax, rbx
       mov       rcx, SHIFT_48
       shrx      rbx, rax, rcx
-      mov       BYTE [rsi], bl
-      inc       rsi
+      mov       BYTE [r8], bl
+      inc       r8
 ; put byte 7 of uint64_t value into bytebuffer
-      mov       rax, QWORD [rbp - 16]
+      mov       rax, rsi
       mov       rbx, MASK_64_BYTE_7
       and       rax, rbx
       mov       rcx, SHIFT_56
       shrx      rbx, rax, rcx
-      mov       BYTE [rsi], bl
-      inc       rsi
+      mov       BYTE [r8], bl
+      inc       r8
 ; update index of bytebuffer
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 8
       mov       QWORD [rdi + bytebuffer.index], rax
-.epilogue:
+.return:
       pop       rbx
-      mov       rsp, rbp
-      pop       rbp
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2232,27 +2329,78 @@ bb_put_uint64:
 ;
       global bb_put_uint64_at:function
 bb_put_uint64_at:
-; prologue
-      push      rbp
-      mov       rbp, rsp
-      sub       rsp, 16
-; QWORD [rbp - 8] = rdi (bb)
-      mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = org_index (bb->index);
-      mov       rax, QWORD [rdi + bytebuffer.index]
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      mov       QWORD [rdi + bytebuffer.index], rsi
-; bb_put_uint64(bb, value);
-      mov       rsi, rdx
-      call      bb_put_uint64
-; bb_set_index(bb, org_index);
-      mov       rdi, QWORD [rbp - 8]
-      mov       rax, QWORD [rbp - 16]
-      mov       QWORD [rdi + bytebuffer.index], rax
-; epilogue
-      mov       rsp, rbp
-      pop       rbp
+      push      rbx
+; if (index + 8 >= bb->bound) return;
+      mov       rax, rsi
+      add       rax, 8
+      cmp       rax, QWORD [rdi + bytebuffer.bound]
+      jae       .return
+; byte_t *bp = &bb->buffer[index];
+      mov       rax, QWORD [rdi + bytebuffer.buffer]
+      add       rsi, rax
+; put byte 0 of uint64_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_0
+      and       rax, rbx
+      mov       BYTE [rsi], al
+      inc       rsi
+; put byte 1 of uint64_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_1
+      and       rax, rbx
+      mov       rcx, SHIFT_8
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 2 of uint64_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_2
+      and       rax, rbx
+      mov       rcx, SHIFT_16
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 3 of uint64_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_3
+      and       rax, rbx
+      mov       rcx, SHIFT_24
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 4 of uint64_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_4
+      and       rax, rbx
+      mov       rcx, SHIFT_32
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 5 of uint64_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_5
+      and       rax, rbx
+      mov       rcx, SHIFT_40
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 6 of uint64_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_6
+      and       rax, rbx
+      mov       rcx, SHIFT_48
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+      inc       rsi
+; put byte 7 of uint64_t value into bytebuffer
+      mov       rax, rdx
+      mov       rbx, MASK_64_BYTE_7
+      and       rax, rbx
+      mov       rcx, SHIFT_56
+      shrx      rbx, rax, rcx
+      mov       BYTE [rsi], bl
+.return:
+      pop       rbx
       ret
 ;
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2327,7 +2475,9 @@ bb_put_varchar:
 ; stack:
 ;
 ;   QWORD [rbp - 8]   = rdi (bb)
-;   QWORD [rbp - 16]  = org_index (bb->index)
+;   QWORD [rbp - 16]  = rsi (index)
+;   QWORD [rbp - 24]  = rdx (value)
+;   QWORD [rbp - 32]  = value_len (length of value)
 ;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
       global bb_put_varchar_at:function
@@ -2335,22 +2485,31 @@ bb_put_varchar_at:
 ; prologue
       push      rbp
       mov       rbp, rsp
-      sub       rsp, 16
+      sub       rsp, 32
 ; QWORD [rbp - 8] = rdi (bb)
       mov       QWORD [rbp - 8], rdi
-; QWORD [rbp - 16] = bb_get_index(bb);
-      mov       rax, QWORD [rdi + bytebuffer.index]
-      mov       QWORD [rbp - 16], rax
-; bb_set_index(bb, index);
-      mov       QWORD [rdi + bytebuffer.index], rsi
-; bb_put_varchar(bb, value);
-      mov       rsi, rdx
-      call      bb_put_varchar
-; bb_set_index(bb, org_index);
+; QWORD [rbp - 16] = rsi (value)
+      mov       QWORD [rbp - 16], rsi
+; QWORD [rbp - 24] = rdx (value)
+      mov       QWORD [rbp - 24], rdx
+; size_t value_len = strlen(value);
+      mov       rdi, rdx
+      call      strlen wrt ..plt
+      mov       QWORD [rbp - 32], rax
+; if (index + value_len >= bb->bound) return;
       mov       rdi, QWORD [rbp - 8]
       mov       rax, QWORD [rbp - 16]
-      mov       QWORD [rdi + bytebuffer.index], rax
-; epilogue
+      add       rax, QWORD [rbp - 32]
+      cmp       rax, QWORD [rdi + bytebuffer.bound]
+      jae       .epilogue
+; (void)memmove64(&bb->buffer[bb->index], value, value_len);
+      mov       rax, QWORD [rdi + bytebuffer.buffer]
+      add       rax, QWORD [rbp - 16]
+      mov       rdi, rax
+      mov       rsi, QWORD [rbp - 24]
+      mov       rdx, QWORD [rbp - 32]
+      call      memmove64 wrt ..plt
+.epilogue:
       mov       rsp, rbp
       pop       rbp
       ret

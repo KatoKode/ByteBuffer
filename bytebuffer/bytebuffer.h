@@ -41,15 +41,6 @@
 typedef uint8_t bool_t;
 typedef uint8_t byte_t;
 
-
-uint16_t const  MASK_16_BYTE_0  = 0x00FF;
-uint16_t const  MASK_16_BYTE_1  = 0xFF00;
-
-uint32_t const  MASK_32_BYTE_0  = 0x000000FF;
-uint32_t const  MASK_32_BYTE_1  = 0x0000FF00;
-uint32_t const  MASK_32_BYTE_2  = 0x00FF0000;
-uint32_t const  MASK_32_BYTE_3  = 0xFF000000;
-
 uint64_t const  MASK_64_BYTE_0  = 0x00000000000000FF;
 uint64_t const  MASK_64_BYTE_1  = 0x000000000000FF00;
 uint64_t const  MASK_64_BYTE_2  = 0x0000000000FF0000;
