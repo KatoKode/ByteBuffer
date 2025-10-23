@@ -335,8 +335,6 @@ void getValues (bytebuffer_t *buffer)
 
   // getI32At
 
-  index = bb_get_index(buffer);
-
   i32 = getI32At(buffer, index);
 
   printf("int32_t: %d at: %lu\n", i32, index);
@@ -508,7 +506,7 @@ void putValues (bytebuffer_t *buffer)
 
   putFloatAt(buffer, index, FLT_MIN);
 
-  putText(buffer, "TEST 22");
+  putText(buffer, "TEXT 22");
 
   index = bb_get_index(buffer);
 
@@ -518,9 +516,9 @@ void putValues (bytebuffer_t *buffer)
 
   index = bb_get_index(buffer);
 
-  putText(buffer, "TEST 777");
+  putText(buffer, "TEXT 777");
 
-  putTextAt(buffer, index, "TEST 333");
+  putTextAt(buffer, index, "TEXT 333");
 
   index = bb_get_index(buffer);
 
@@ -528,7 +526,7 @@ void putValues (bytebuffer_t *buffer)
 
   putI16At(buffer, index, SHRT_MIN);
 
-  putText(buffer, "TEST 4444");
+  putText(buffer, "TEXT 4444");
 
   index = bb_get_index(buffer);
 
@@ -539,7 +537,7 @@ void putValues (bytebuffer_t *buffer)
   for (int i = 0; i < 10; ++i)
   {
     char txt [ 16 ];
-    (void) sprintf(txt, "TEST %02d", i);
+    (void) sprintf(txt, "TEXT %02d", i);
     putText(buffer, txt);
   }
 }
