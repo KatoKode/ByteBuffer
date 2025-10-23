@@ -357,7 +357,7 @@ bb_reset:
       cmp       rax, 0
       jl        .return
       cmp       rax, QWORD [rdi + bytebuffer.index]
-      jae       .return
+      ja       .return
       mov       QWORD [rdi + bytebuffer.index], rax
 .return:
       ret
@@ -448,7 +448,7 @@ bb_get:
       xor       rcx, rcx
       mov       rax, QWORD [rdi + bytebuffer.index]
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; byte_t b = bb->buffer[bb->index];
       mov       rsi, QWORD [rdi + bytebuffer.buffer]
       add       rsi, rax
@@ -482,7 +482,7 @@ bb_get_at:
 ; if (index >= bb->bound) return '\0';;
       xor       rcx, rcx
       cmp       rsi, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; byte_t b = bb->buffer[index];
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rsi, rax
@@ -560,7 +560,7 @@ bb_get_double:
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 8
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      ja        .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, QWORD [rdi + bytebuffer.buffer]
@@ -647,7 +647,7 @@ bb_get_double_at:
       mov       rax, rsi
       add       rax, 8
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      ja        .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[index];
       mov       rax, rsi
       add       rax, QWORD [rdi + bytebuffer.buffer]
@@ -729,7 +729,7 @@ bb_get_float:
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 4
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      ja        .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, QWORD [rdi + bytebuffer.buffer]
@@ -792,7 +792,7 @@ bb_get_float_at:
       mov       rax, rsi
       add       rax, 4
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      ja        .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[index];
       add       rsi, QWORD [rdi + bytebuffer.buffer]
 ; byte 0
@@ -1002,7 +1002,7 @@ bb_get_uint16:
       mov       rcx, QWORD [rdi + bytebuffer.index]
       add       rcx, 2
       cmp       rcx, QWORD [rdi + bytebuffer.bound]
-      ja        .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, QWORD [rdi + bytebuffer.buffer]
@@ -1053,7 +1053,7 @@ bb_get_uint16_at:
       mov       rcx, rsi
       add       rcx, 2
       cmp       rcx, QWORD [rdi + bytebuffer.bound]
-      ja        .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[index];
       mov       rax, rsi
       add       rax, QWORD [rdi + bytebuffer.buffer]
@@ -1099,7 +1099,7 @@ bb_get_uint32:
       mov       rcx, QWORD [rdi + bytebuffer.index]
       add       rcx, 4
       cmp       rcx, QWORD [rdi + bytebuffer.bound]
-      ja        .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, QWORD [rdi + bytebuffer.buffer]
@@ -1162,11 +1162,9 @@ bb_get_uint32_at:
       mov       rcx, rsi
       add       rcx, 4
       cmp       rcx, QWORD [rdi + bytebuffer.bound]
-      ja        .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[index];
-      mov       rax, rsi
-      add       rax, QWORD [rdi + bytebuffer.buffer]
-      mov       rsi, rax
+      add       rsi, QWORD [rdi + bytebuffer.buffer]
 ; byte 0
       xor       rdx, rdx
       xor       rax, rax
@@ -1220,7 +1218,7 @@ bb_get_uint64:
       mov       rcx, QWORD [rdi + bytebuffer.index]
       add       rcx, 8
       cmp       rcx, QWORD [rdi + bytebuffer.bound]
-      ja        .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, QWORD [rdi + bytebuffer.buffer]
@@ -1307,7 +1305,7 @@ bb_get_uint64_at:
       mov       rcx, rsi
       add       rcx, 8
       cmp       rcx, QWORD [rdi + bytebuffer.bound]
-      ja        .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[index];
       mov       rax, rsi
       add       rax, QWORD [rdi + bytebuffer.buffer]
@@ -1403,7 +1401,7 @@ bb_get_varchar:
       mov       rcx, QWORD [rdi + bytebuffer.index]
       add       rcx, rsi
       cmp       rcx, QWORD [rdi + bytebuffer.bound]
-      ja        .epilogue
+      ja       .epilogue
 ; if ((buffer = calloc(1, size)) == NULL) return NULL;
       mov       rdi, 1
       inc       rsi
@@ -1472,7 +1470,7 @@ bb_get_varchar_at:
       mov       rax, rsi
       add       rax, rdx
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .epilogue
+      ja       .epilogue
 ; if ((buffer = calloc(1, size)) == NULL) return NULL;
       mov       rdi, 1
       inc       rsi
@@ -1512,7 +1510,7 @@ bb_put:
 ; if (bb->index >= bb->bound) return;
       mov       rax, QWORD [rdi + bytebuffer.index]
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; bb->buffer[index] = value;
       add       rax, QWORD [rdi + bytebuffer.buffer]
       mov       BYTE [rax], sil
@@ -1542,7 +1540,7 @@ bb_put_at:
 ; if (index >= bb->bound) return;
       mov       rax, rsi
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; bb->buffer[index] = value;
       add       rax, QWORD [rdi + bytebuffer.buffer]
       mov       BYTE [rax], dl
@@ -1607,7 +1605,7 @@ bb_put_double:
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 8
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rax, QWORD [rdi + bytebuffer.index]
@@ -1703,7 +1701,7 @@ bb_put_double_at:
       mov       rax, rsi
       add       rax, 8
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[index];
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rax, rsi
@@ -1793,7 +1791,7 @@ bb_put_float:
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 4
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; byte_t *bp = bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rax, QWORD [rdi + bytebuffer.index]
@@ -1856,7 +1854,7 @@ bb_put_float_at:
       mov       rax, rsi
       add       rax, 4
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; byte_t *bp = bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rsi, rax
@@ -2024,7 +2022,7 @@ bb_put_uint16:
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 2
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rax, QWORD [rdi + bytebuffer.index]
@@ -2071,7 +2069,7 @@ bb_put_uint16_at:
       mov       rax, rsi
       add       rax, 2
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[index];
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rsi, rax
@@ -2112,7 +2110,7 @@ bb_put_uint32:
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 4
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, qword [rdi + bytebuffer.buffer]
       add       rax, QWORD [rdi + bytebuffer.index]
@@ -2176,7 +2174,7 @@ bb_put_uint32_at:
       mov       rax, rsi
       add       rax, 4
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[index];
       mov       rax, qword [rdi + bytebuffer.buffer]
       add       rsi, rax
@@ -2233,7 +2231,7 @@ bb_put_uint64:
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, 8
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[bb->index];
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rax, QWORD [rdi + bytebuffer.index]
@@ -2334,7 +2332,7 @@ bb_put_uint64_at:
       mov       rax, rsi
       add       rax, 8
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .return
+      ja       .return
 ; byte_t *bp = &bb->buffer[index];
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rsi, rax
@@ -2441,7 +2439,7 @@ bb_put_varchar:
       mov       rax, QWORD [rdi + bytebuffer.index]
       add       rax, QWORD [rbp - 24]
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .epilogue
+      ja       .epilogue
 ; (void)memmove64(&bb->buffer[bb->index], value, value_len);
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rax, QWORD [rdi + bytebuffer.index]
@@ -2501,7 +2499,7 @@ bb_put_varchar_at:
       mov       rax, QWORD [rbp - 16]
       add       rax, QWORD [rbp - 32]
       cmp       rax, QWORD [rdi + bytebuffer.bound]
-      jae       .epilogue
+      ja       .epilogue
 ; (void)memmove64(&bb->buffer[bb->index], value, value_len);
       mov       rax, QWORD [rdi + bytebuffer.buffer]
       add       rax, QWORD [rbp - 16]
