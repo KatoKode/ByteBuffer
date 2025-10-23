@@ -18,11 +18,12 @@
 #-------------------------------------------------------------------------------
 #
 libutil.so: memmove64.o util.o
-	gcc -march=x86-64 -m64 -z noexecstack -shared memmove64.o util.o -o libutil.so
+	gcc -g -march=x86-64 -m64 -z noexecstack -shared memmove64.o util.o \
+		-o libutil.so
 util.o: util.c
-	gcc -march=x86-64 -m64 -Wall -fPIC -c util.c -o util.o
+	gcc -g -march=x86-64 -m64 -Wall -fPIC -c util.c -o util.o
 memmove64.o: memmove64.asm
-	nasm -f elf64 memmove64.asm
+	nasm -g -f elf64 memmove64.asm
 .PHONY: clean
 clean:
 	rm -f libutil.so util.o memmove64.o
