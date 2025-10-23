@@ -33,7 +33,11 @@ int main (int argc, char **argv)
 
   bb_flip(buffer);
 
+  getBufferMeta(buffer);
+
   getValues(buffer);
+
+  getBufferMeta(buffer);
 
   bb_term(buffer);
 
@@ -55,6 +59,7 @@ void getNativeByteOrder()
 //
 void getBufferMeta (bytebuffer_t *buffer)
 {
+  puts(sep);
   byte_t *bbuffer = bb_get_buffer(buffer);
   printf ("bb_get_buffer: %p\n", bbuffer);
   size_t bound = bb_get_bound(buffer);
@@ -67,7 +72,7 @@ void getBufferMeta (bytebuffer_t *buffer)
   printf ("bb_remaining: %lu\n", remaining);
   size_t size = bb_get_size(buffer);
   printf ("bb_get_size: %lu\n", size);
-
+  puts(sep);
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
@@ -341,9 +346,24 @@ void getValues (bytebuffer_t *buffer)
 
   for (int i = 0; i < 10; ++i)
   {
+    // getText
+
+    index = bb_get_index(buffer);
+
     text = getText(buffer);
+
     printf("text: %s\n", text);
+
     free(text);
+
+    // getText
+
+    text = getTextAt(buffer, index);
+
+    printf("text: %s at: %lu\n", text, index);
+
+    free(text);
+
   }
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
