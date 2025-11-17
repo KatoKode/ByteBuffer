@@ -28,7 +28,7 @@ sh ./bytebuffer_make.sh
 
 ---
 
-# RUN QUEUE DEMO
+# RUN THE DEMO
 In the `demo` folder enter the following command:
 ```bash
 ./go_demo.sh
