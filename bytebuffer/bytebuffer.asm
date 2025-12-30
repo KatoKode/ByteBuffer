@@ -109,6 +109,7 @@ bb_init:
 ; bb->size = size;
       mov       QWORD [rdi + bytebuffer.size], rsi
 ; bb->buffer = calloc(1, size);
+      mov       rdi, 1
       ALIGN_STACK_AND_CALL rbx, calloc, wrt, ..plt
       mov       rdi, QWORD [rbp - 8]
       mov       QWORD [rdi + bytebuffer.buffer], rax
