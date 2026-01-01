@@ -27,7 +27,7 @@
 // To get debug output uncomment the following line and remake the demo program.
 // #define BB_DEBUG  1
 
-#define BUFFER_SIZE     256
+#define BUFFER_SIZE     150
 
 #define INDEX_160   160
 #define INDEX_64    170
