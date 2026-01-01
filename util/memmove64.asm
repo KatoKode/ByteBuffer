@@ -1,5 +1,5 @@
 ;-------------------------------------------------------------------------------
-;   ByteBuffer Implementation in x86_64 Assembly Language with C Interface
+;   BTree Implementation in x86_64 Assembly Language with C Interface
 ;   Copyright (C) 2025  J. McIntosh
 ;
 ;   This program is free software; you can redistribute it and/or modify
@@ -44,15 +44,12 @@ section .text
 memmove64:
       cld                     ; assume the direction is forward
       push      rdi
-      mov       rax, rdx
-      xor       rdx, rdx
-      mov       rcx, QW_SIZE
-      div       rcx
-      mov       rcx, rax
+      mov       rcx, rdx      ; copy o_size to rcx
+      and       rdx, 7        ; o_size mod 8 (# of bytes)
+      shr       rcx, 3        ; o_size div 8 (# of quadwords)
       rep movsq
       mov       rcx, rdx
       rep movsb
-.return:
       pop       rax
       ret
 %endif
