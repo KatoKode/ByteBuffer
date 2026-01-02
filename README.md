@@ -2,10 +2,10 @@
 
 ByteBuffer Implementation in x86_64 Assembly Language with C Interface.
 
-By JD McIntosh
-
 [![License: GPL-2.0](https://img.shields.io/badge/License-GPL%202.0-blue.svg)](https://opensource.org/licenses/GPL-2.0)
 [![Stars](https://img.shields.io/github/stars/KatoKode/ByteBuffer?style=social)](https://github.com/KatoKode/ByteBuffer/stargazers)
+
+By JD McIntosh
 
 ## Description
 
